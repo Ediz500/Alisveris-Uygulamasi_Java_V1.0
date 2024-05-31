@@ -1,0 +1,11 @@
+#root{
+    -fx-background-image: url("mainstill.jpg");
+    -fx-background-size: cover;
+}
+#root1{
+    -fx-background-size: cover;
+}
+#root3{
+    -fx-background-image: url("shopCart.png");
+    -fx-background-size: cover;
+}

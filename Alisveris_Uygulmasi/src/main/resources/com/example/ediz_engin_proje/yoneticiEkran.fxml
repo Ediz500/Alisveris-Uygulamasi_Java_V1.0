@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<VBox id="root1" style="-fx-background-color: #2a475e;" stylesheets="@mainstill.css" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.ediz_engin_proje.YoneticiEkran">
+   <children>
+      <AnchorPane id="root1" prefHeight="70.0" prefWidth="1000.0" style="-fx-background-color: #1b2838;" stylesheets="@mainstill.css">
+         <children>
+            <Button layoutX="14.0" layoutY="18.0" mnemonicParsing="false" onAction="#musteri_gec" prefHeight="26.0" prefWidth="220.0" style="-fx-background-color: #59788e;" stylesheets="@mainstill.css" text="MÜŞTERİ GÖRÜNÜMÜNE GEÇ" textFill="WHITE">
+               <font>
+                  <Font name="Century Schoolbook Bold" size="12.0" />
+               </font>
+            </Button>
+            <Button fx:id="adminEkleCikar" disable="true" layoutX="891.0" layoutY="18.0" mnemonicParsing="false" onAction="#adminEkleCikar" style="-fx-background-color: #A9A9A9;" stylesheets="@mainstill.css" text="ADMİN EKLE / ÇIKAR" textFill="WHITE" visible="false" />
+            <Button layoutX="782.0" layoutY="19.0" mnemonicParsing="false" onAction="#cikis" text="ÇIKIŞ" />
+         </children>
+      </AnchorPane>
+      <AnchorPane id="root1" prefHeight="650.0" prefWidth="1050.0" style="-fx-background-color: #2a475e;" stylesheets="@mainstill.css">
+         <children>
+            <Label alignment="CENTER" layoutX="315.0" layoutY="30.0" prefHeight="34.0" prefWidth="122.0" style="-fx-background-color: #59788e; -fx-background-radius: 3;" stylesheets="@mainstill.css" text="ADET" textFill="WHITE">
+               <font>
+                  <Font name="Century Schoolbook Bold" size="18.0" />
+               </font>
+            </Label>
+            <Label alignment="CENTER" layoutX="466.0" layoutY="30.0" prefHeight="34.0" prefWidth="122.0" style="-fx-background-color: #59788e; -fx-background-radius: 3;" stylesheets="@mainstill.css" text="FİYAT" textFill="WHITE">
+               <font>
+                  <Font name="Century Schoolbook Bold" size="18.0" />
+               </font>
+            </Label>
+            <ListView id="root1" fx:id="urunler" layoutX="164.0" layoutY="71.0" prefHeight="547.0" prefWidth="122.0" style="-fx-background-color: #59788e; -fx-background-radius: 3; -fx-control-inner-background: #59788e; -fx-fixed-cell-size: 30;" stylesheets="@mainstill.css" />
+            <ListView id="root1" fx:id="stoklar" layoutX="315.0" layoutY="71.0" prefHeight="547.0" prefWidth="122.0" style="-fx-background-color: #59788e; -fx-background-radius: 3; -fx-control-inner-background: #59788e; -fx-fixed-cell-size: 30;" stylesheets="@mainstill.css" />
+            <ListView id="root1" fx:id="fiyatlar" layoutX="466.0" layoutY="71.0" prefHeight="547.0" prefWidth="122.0" style="-fx-background-color: #59788e; -fx-background-radius: 3; -fx-control-inner-background: #59788e; -fx-fixed-cell-size: 30;" stylesheets="@mainstill.css" />
+            <Label alignment="CENTER" layoutX="164.0" layoutY="30.0" prefHeight="34.0" prefWidth="122.0" style="-fx-background-color: #59788e; -fx-background-radius: 3;" stylesheets="@mainstill.css" text="ÜRÜNLER" textFill="WHITE">
+               <font>
+                  <Font name="Century Schoolbook Bold" size="18.0" />
+               </font>
+            </Label>
+            <VBox id="root1" alignment="CENTER" layoutX="783.0" layoutY="30.0" prefHeight="146.0" prefWidth="172.0" spacing="10.0" style="-fx-background-color: #A9A9A9; -fx-background-radius: 3;" stylesheets="@mainstill.css">
+               <children>
+                  <TextField fx:id="urunAdi" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="10.0" prefWidth="100.0" promptText="Ürün Adı" />
+                  <TextField fx:id="stokSayisi" maxHeight="-Infinity" maxWidth="-Infinity" prefWidth="100.0" promptText="Stok Sayısı" />
+                  <TextField fx:id="fiyat" maxHeight="-Infinity" maxWidth="-Infinity" prefWidth="100.0" promptText="Fiyat" />
+               </children>
+            </VBox>
+            <Button layoutX="843.0" layoutY="212.0" mnemonicParsing="false" onAction="#urunEkle" prefHeight="34.0" prefWidth="112.0" style="-fx-background-color: #A9A9A9;" stylesheets="@mainstill.css" text="ÜRÜN EKLE" textFill="WHITE">
+               <font>
+                  <Font name="Century Schoolbook Bold" size="12.0" />
+               </font>
+            </Button>
+            <Label fx:id="uyari" alignment="CENTER" layoutX="782.0" layoutY="265.0" prefHeight="34.0" prefWidth="172.0" style="-fx-background-color: #2a475e; -fx-background-radius: 3;" stylesheets="@mainstill.css" textFill="RED">
+               <font>
+                  <Font name="Century Schoolbook Bold" size="12.0" />
+               </font>
+            </Label>
+            <ListView id="root1" fx:id="butonlar" layoutX="588.0" layoutY="71.0" prefHeight="547.0" prefWidth="100.0" style="-fx-background-color: #2a475e; -fx-control-inner-background: #2a475e; -fx-fixed-cell-size: 30;" stylesheets="@mainstill.css" />
+            <Button fx:id="kaydet" layoutX="843.0" layoutY="584.0" mnemonicParsing="false" prefHeight="34.0" prefWidth="112.0" style="-fx-background-color: #A9A9A9;" stylesheets="@mainstill.css" text="KAYDET" textFill="WHITE" visible="false">
+               <font>
+                  <Font name="Century Schoolbook Bold" size="12.0" />
+               </font>
+            </Button>
+         </children>
+      </AnchorPane>
+   </children>
+</VBox>
