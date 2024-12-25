@@ -10,49 +10,76 @@ import javafx.stage.Stage;
 
 import java.io.*;
 import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
+import java.sql.*;
 import java.util.ResourceBundle;
 
 public class YuklemeEkran extends Ekran implements Initializable {
     public static double Bakiye;
-    static List<String> musteriIsim= new ArrayList<>();
-    static List<String> musteriParola = new ArrayList<>();
-    static List<String> musteriBakiye = new ArrayList<>();
+
     @FXML
     TextField para;
+
     @FXML
     Label paraMiktar;
+
+    // Veritabanı bağlantısı için bilgiler
+    private static final String DB_URL = "jdbc:sqlserver://localhost:1433;databaseName=BBB;encrypt=false;trustServerCertificate=true";
+    private static final String DB_USER = "BBB";
+    private static final String DB_PASSWORD = "BBB";
+
     @Override
-    public void yaz() throws IOException {
-        paraMiktar.setText(Double.toString(Bakiye));
+    public void yaz() throws SQLException {
+        // Bakiye bilgisini veritabanından çekmek
+        Connection connection = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+        String query = "SELECT Bakiye FROM Musteriler WHERE MusteriAdi = ?";
+        try (PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            preparedStatement.setString(1, MainController.aktifMusteri);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            if (resultSet.next()) {
+                Bakiye = resultSet.getDouble("Bakiye");
+            }
+            paraMiktar.setText(Double.toString(Bakiye));
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new SQLException("Veritabanı bağlantısı sırasında bir hata oluştu.");
+        } finally {
+            connection.close();
+        }
     }
 
-    public void BakiyeYukle() throws IOException {
+    public void BakiyeYukle() throws SQLException {
+        // Bakiye güncellemesi
         Bakiye += Double.parseDouble(para.getText());
         sahsiBakiye();
-        yenile();
+        try {
+            yenile();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
-    public void bes(){
+
+    public void bes() {
         para.setText("5");
     }
-    public void on(){
+
+    public void on() {
         para.setText("10");
     }
-    public void yirmi(){
+
+    public void yirmi() {
         para.setText("20");
     }
-    public void elli(){
+
+    public void elli() {
         para.setText("50");
     }
-    public void yuz(){
+
+    public void yuz() {
         para.setText("100");
     }
-    public void ikiyuz(){
-        para.setText("200");
 
+    public void ikiyuz() {
+        para.setText("200");
     }
 
     @Override
@@ -69,48 +96,38 @@ public class YuklemeEkran extends Ekran implements Initializable {
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
-
         try {
-            yaz();
-        } catch (IOException e) {
+            yaz(); // Bakiye bilgisini al
+        } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
-    public static void sahsiBakiye(){
-        try (BufferedReader reader = new BufferedReader(new FileReader("musteriler.txt"))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                String[] musteri = line.split(":");
-                musteriIsim.add(musteri[0].trim());
-                musteriParola.add(musteri[1].trim());
-                musteriBakiye.add(musteri[2].trim());
+
+    public static void sahsiBakiye() {
+        Connection connection = null;
+        try {
+            // Veritabanı bağlantısını kur
+            connection = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+
+            // Bakiye güncelleme işlemi
+            String query = "UPDATE Musteriler SET Bakiye = ? WHERE MusteriAdi = ?";
+            try (PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+                preparedStatement.setDouble(1, Bakiye);
+                preparedStatement.setString(2, MainController.aktifMusteri);
+                preparedStatement.executeUpdate();
             }
-            reader.close();
-            Path txt = Path.of("musteriler.txt");
-            Files.deleteIfExists(txt);
-        }
-        catch (Exception e) {
+
+        } catch (SQLException e) {
             e.printStackTrace();
-        }
-        for (int i = 0; i<musteriIsim.size(); i++){
-
-            if (musteriIsim.get(i).equals(MainController.aktifMusteri))
-            {
-                musteriBakiye.set(i, String.valueOf(Bakiye));
+        } finally {
+            if (connection != null) {
+                try {
+                    connection.close();  // Veritabanı bağlantısını kapat
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
             }
-
         }
-        for (int i = 0; i<musteriIsim.size(); i++){
-            try (FileWriter writer = new FileWriter("musteriler.txt", true)) {
-                writer.write(musteriIsim.get(i) + ":" + musteriParola.get(i) + ":" + musteriBakiye.get(i) + "\n");
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-
-        }
-        YuklemeEkran.musteriIsim.clear();
-        YuklemeEkran.musteriParola.clear();
-        YuklemeEkran.musteriBakiye.clear();
-
     }
+
 }

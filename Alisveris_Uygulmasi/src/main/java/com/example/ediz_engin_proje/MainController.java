@@ -8,25 +8,28 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 
-import java.util.*;
-import java.io.BufferedReader;
-import java.io.FileReader;
+import java.sql.*;
 import java.io.IOException;
 import java.net.URL;
+import java.util.ResourceBundle;
 
 public class MainController extends Ekran implements Initializable {
+    String URL = "jdbc:sqlserver://localhost:1433;databaseName=BBB;encrypt=false;trustServerCertificate=true";
+    String USER = "BBB";  // Kullanıcı adı
+    String PASSWORD = "BBB";  // Şifre
+    
+    
     @FXML
     TextField kullaniciAdi;
     @FXML
     TextField sifre;
     @FXML
     Label uyari;
-    static List<String> yoneticiler = new ArrayList<>();
-    static List<String> yoneticiSifreler = new ArrayList<>();
     static boolean yoneticiMi = false;
     static boolean yetkiliMi = false;
     static int girisKontrol = 0;
     static String aktifMusteri;
+
     @FXML
     public void kayitOl() throws IOException {
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("kaydolEkran.fxml"));
@@ -36,7 +39,8 @@ public class MainController extends Ekran implements Initializable {
         stage.setScene(scene);
         stage.show();
     }
-    public void giris() throws IOException {
+
+    public void giris() throws SQLException, IOException {
         kullaniciKontrol();
         switch (girisKontrol){
             case 0:
@@ -62,58 +66,53 @@ public class MainController extends Ekran implements Initializable {
                 Stage stage2 = (Stage) uyari.getScene().getWindow();
                 stage2.close();
                 break;
-
         }
     }
+
     @FXML
-    public void kullaniciKontrol() throws IOException {
+    public void kullaniciKontrol() throws SQLException {
         girisKontrol = 0;
         yetkiliMi = false;
-        BufferedReader reader = new BufferedReader(new FileReader("adminler.txt"));
-        String line;
-        int satir = 0;
-        while ((line = reader.readLine()) != null) {
-            String[] kullanici = line.split(":");
-            if ((yoneticiler.get(satir).equals(kullaniciAdi.getText()) && (yoneticiSifreler.get(satir).equals(sifre.getText()))) || (kullanici[0].trim().equals(kullaniciAdi.getText()) && kullanici[1].trim().equals(sifre.getText())))
-            {
-                yoneticiMi=false;
-                yetkiliMi=true;
-                if ((yoneticiler.get(satir).equals(kullaniciAdi.getText()) && (yoneticiSifreler.get(satir).equals(sifre.getText())))){
-                    yoneticiMi=true;
+
+        try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD)) {
+            // Yönetici kontrolü
+            String sql = "SELECT YoneticiAdi, YoneticiSifre FROM Yoneticiler WHERE YoneticiAdi = ? AND YoneticiSifre = ?";
+            try (PreparedStatement statement = conn.prepareStatement(sql)) {
+                statement.setString(1, kullaniciAdi.getText());
+                statement.setString(2, sifre.getText());
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    if (resultSet.next()) {
+                        // Yöneticinin giriş yaptığı tespit edildi
+                        yoneticiMi = true;
+                        yetkiliMi = true;
+                        girisKontrol = 1;
+                        return; // Yönetici girişi doğrulandı, metottan çık
+                    }
                 }
-                girisKontrol = 1;
-                break;
             }
-            else {
-                BufferedReader reader2 = new BufferedReader(new FileReader("musteriler.txt"));
-                String line2;
-                while ((line2 = reader2.readLine()) != null){
-                    String[] kullanici2 = line2.split(":");
-                    if (kullanici2[0].trim().equals(kullaniciAdi.getText()) && kullanici2[1].trim().equals(sifre.getText())){
+
+            // Müşteri kontrolü
+            String sql2 = "SELECT MusteriAdi, MusteriSifresi FROM Musteriler WHERE MusteriAdi = ? AND MusteriSifresi = ?";
+            try (PreparedStatement statement2 = conn.prepareStatement(sql2)) {
+                statement2.setString(1, kullaniciAdi.getText());
+                statement2.setString(2, sifre.getText());
+                try (ResultSet resultSet2 = statement2.executeQuery()) {
+                    if (resultSet2.next()) {
+                        // Müşteri giriş yaptı
                         girisKontrol = 2;
                         aktifMusteri = kullaniciAdi.getText();
                     }
-
                 }
-                reader2.close();
-
             }
-            if (satir < yoneticiSifreler.size()-1){
-                satir += 1;
-            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            uyari.setText("Veritabanı bağlantı hatası.");
         }
-        reader.close();
-
     }
+
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
-        yoneticiler.add("ediz");
-        yoneticiler.add("damla");
-        yoneticiSifreler.add("ediz");
-        yoneticiSifreler.add("damla");
-        MusteriEkran.uruns.clear();
-        MusteriEkran.stoks.clear();
-        MusteriEkran.fiyats.clear();
+        // Bu kısımda yöneticilerin başlangıçta sisteme tanıtılması gerekebilir
     }
 
     @Override

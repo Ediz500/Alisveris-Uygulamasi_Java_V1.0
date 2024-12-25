@@ -23,7 +23,7 @@
                         <Image url="@wallet-icon-1.png" />
                      </image>
                   </ImageView>
-                  <Label alignment="CENTER" layoutY="-1.0" minHeight="-Infinity" minWidth="-Infinity" prefHeight="34.0" prefWidth="147.0" text="BAKİYE  :" textFill="WHITE">
+                  <Label fx:id="Bakiye" alignment="CENTER" layoutY="-1.0" minHeight="-Infinity" minWidth="-Infinity" prefHeight="34.0" prefWidth="147.0" text="BAKİYE  :" textFill="WHITE">
                      <font>
                         <Font name="Century Schoolbook Bold" size="12.0" />
                      </font>

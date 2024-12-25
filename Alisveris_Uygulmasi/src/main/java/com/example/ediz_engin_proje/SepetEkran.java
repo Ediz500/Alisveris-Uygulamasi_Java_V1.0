@@ -11,14 +11,16 @@ import javafx.stage.Stage;
 
 import java.io.*;
 import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
 
 public class SepetEkran extends Ekran implements Initializable {
+
+    String URL = "jdbc:sqlserver://localhost:1433;databaseName=BBB;encrypt=false;trustServerCertificate=true";
+    String USER = "BBB";  // Kullanıcı adı
+    String PASSWORD = "BBB";  // Şifre
     @FXML
     ListView<Double> toplam = new ListView<>();
     @FXML
@@ -41,9 +43,11 @@ public class SepetEkran extends Ekran implements Initializable {
     List<String> urunStoklari = new ArrayList<>();
     List<String> urunFiyatlari = new ArrayList<>();
     double toplamtutar;
-    public void bakiyeGoruntule(){
+
+    public void bakiyeGoruntule() {
         bakiye.setText(String.valueOf(YuklemeEkran.Bakiye));
     }
+
     public void bakiyeYukle() throws IOException {
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("yuklemeEkran.fxml"));
         Stage stage = new Stage();
@@ -52,6 +56,7 @@ public class SepetEkran extends Ekran implements Initializable {
         stage.setScene(scene);
         stage.show();
     }
+
     public void geri_git() throws IOException {
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("musteriEkran.fxml"));
         Stage stage = new Stage();
@@ -61,21 +66,32 @@ public class SepetEkran extends Ekran implements Initializable {
         stage.show();
         Stage stage1 = (Stage) urunler.getScene().getWindow();
         stage1.close();
-
     }
+
     @FXML
     public void odemeYap() throws IOException {
-        for (int j=0; j<toplam.getItems().size(); j++){
+        for (int j = 0; j < toplam.getItems().size(); j++) {
             toplamtutar += toplam.getItems().get(j);
         }
-        if (toplamtutar>YuklemeEkran.Bakiye){
+
+        if (toplamtutar > YuklemeEkran.Bakiye) {
             uyari.setText("Bakiyeniz Yetersiz");
-        }
-        else if (toplamtutar==0){
+        } else if (toplamtutar == 0) {
             uyari.setText("Sepetiniz Boş.");
-        }
-        else{
+        } else {
             YuklemeEkran.Bakiye -= toplamtutar;
+
+            // Bakiye güncelleme SQL sorgusu
+            try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD)) {
+                String updateQuery = "UPDATE Musteriler SET Bakiye = ? WHERE MusteriAdi = ?";
+                PreparedStatement stmt = conn.prepareStatement(updateQuery);
+                stmt.setDouble(1, YuklemeEkran.Bakiye);
+                stmt.setString(2, "MusteriAdi"); // Kullanıcı adı burada belirlenmeli
+                stmt.executeUpdate();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+
             stokDus();
             MusteriEkran.fiyats.clear();
             MusteriEkran.uruns.clear();
@@ -85,6 +101,7 @@ public class SepetEkran extends Ekran implements Initializable {
             yenile();
         }
     }
+
     @Override
     public void yaz(){
         int satir=0;
@@ -103,16 +120,16 @@ public class SepetEkran extends Ekran implements Initializable {
             button.setPrefHeight(30);
             final int finalSatir = satir;
             button.setOnAction(e -> {
-                try {
-                    silButton(finalSatir);
-                } catch (IOException ex) {
-                    throw new RuntimeException(ex);
-                }
-            }
+                        try {
+                            silButton(finalSatir);
+                        } catch (IOException ex) {
+                            throw new RuntimeException(ex);
+                        }
+                    }
             );
-                butonlar.getItems().add(button);
-                satir++;
-            }
+            butonlar.getItems().add(button);
+            satir++;
+        }
     }
 
     private void silButton(int satir) throws IOException {
@@ -149,42 +166,27 @@ public class SepetEkran extends Ekran implements Initializable {
         stage.show();
         Stage stage1 = (Stage) urunler.getScene().getWindow();
         stage1.close();
-
     }
-    public void stokDus(){
-        try (BufferedReader reader = new BufferedReader(new FileReader("urunler.txt"))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                String[] urun = line.split(":");
-                urunAdlari.add(urun[0].trim());
-                urunStoklari.add(urun[1].trim());
-                urunFiyatlari.add(urun[2].trim());
+
+    public void stokDus() {
+        try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD)) {
+            // Sepetteki her bir ürünü kontrol ediyoruz
+            for (int i = 0; i < MusteriEkran.uruns.size(); i++) {
+                String urunAdi = MusteriEkran.uruns.get(i);
+                int stok = MusteriEkran.stoks.get(i);
+
+                // SQL sorgusu ile veritabanındaki stokları güncelliyoruz
+                String updateQuery = "UPDATE Urunler SET UrunMiktar = UrunMiktar - ? WHERE UrunAdi = ?";
+                PreparedStatement stmt = conn.prepareStatement(updateQuery);
+                stmt.setInt(1, stok); // Sepetteki stok miktarı kadar azaltma
+                stmt.setString(2, urunAdi); // Ürün adı
+                stmt.executeUpdate();
             }
-            reader.close();
-            Path txt = Path.of("urunler.txt");
-            Files.deleteIfExists(txt);
-        }
-        catch (Exception e) {
+        } catch (SQLException e) {
             e.printStackTrace();
         }
-        for (int i = 0; i<urunAdlari.size(); i++){
-            for (int j = 0; j<MusteriEkran.uruns.size(); j++){
-                if (urunAdlari.get(i).equals(MusteriEkran.uruns.get(j))){
-                    int stok = Integer.parseInt(urunStoklari.get(i))-MusteriEkran.stoks.get(j);
-                    urunStoklari.set(i, String.valueOf(stok));
-                }
-            }
-        }
-        for (int i = 0; i<urunAdlari.size(); i++){
-            try (FileWriter writer = new FileWriter("urunler.txt", true)) {
-                writer.write(urunAdlari.get(i) + ":" + urunStoklari.get(i) + ":" + urunFiyatlari.get(i) + "\n");
-            } catch (Exception e) {
-                uyari.setText("Hata Meydana Geldi.");
-            }
-
-        }
-
     }
+
     public void sepetiTemizle() throws IOException {
         MusteriEkran.fiyats.clear();
         MusteriEkran.uruns.clear();
@@ -192,18 +194,16 @@ public class SepetEkran extends Ekran implements Initializable {
         butonlar.getItems().clear();
         yenile();
     }
+
     public void gorunurYap() {
         try {
             if (MusteriEkran.uruns.size() > 0) {
                 sepetTemizle.setVisible(true);
                 sepetTemizle.setDisable(false);
             }
-        }
-        catch(Exception e)
-        {
+        } catch (Exception e) {
             sepetTemizle.setVisible(false);
-            sepetTemizle.setDisable(true);}
-
+            sepetTemizle.setDisable(true);
+        }
     }
-
 }

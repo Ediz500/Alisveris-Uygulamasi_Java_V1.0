@@ -1,5 +1,9 @@
 package com.example.ediz_engin_proje;
 
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.io.*;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
@@ -10,14 +14,16 @@ import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.io.*;
 import java.net.URL;
 import java.util.Objects;
 import java.util.ResourceBundle;
 
 public class AdminEkleEkran extends Ekran implements Initializable {
+
+    String URL = "jdbc:sqlserver://localhost:1433;databaseName=BBB;encrypt=false;trustServerCertificate=true";
+    String USER = "BBB";  // Kullanıcı adı
+    String PASSWORD = "BBB";  // Şifre
+
     @FXML
     Label uyari;
     @FXML
@@ -31,41 +37,50 @@ public class AdminEkleEkran extends Ekran implements Initializable {
 
     @FXML
     public void adminEkle() throws IOException {
-        String username = loginUsername.getText();
-        String password = loginPassword.getText();
+        String username = loginUsername.getText(); // Kullanıcı adı
+        String password = loginPassword.getText(); // Şifre
+
+        // Admin adı kontrolü
         if (adminKontrol(username)) {
             uyari.setText("Kullanıcı Adı Kullanılıyor.");
-        }else {
-            if (Objects.equals(username, "") || Objects.equals(password, "")) {
+        } else {
+            if (username.isEmpty() || password.isEmpty()) {
                 uyari.setText("Kullanıcı Adı ya da Şifre Boş Olamaz.");
             } else {
-                try (FileWriter writer = new FileWriter("adminler.txt", true)) {
-                    writer.write(username + ":" + password + "\n");
-                } catch (Exception e) {
+                // Admini veritabanına ekleme
+                try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD)) {
+                    String sql = "INSERT INTO Adminler (AdminAdi, AdminSifre) VALUES (?, ?)";
+                    try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                        stmt.setString(1, username); // Kullanıcı adını sorguya ekle
+                        stmt.setString(2, password); // Şifreyi sorguya ekle
+                        stmt.executeUpdate(); // Veritabanına ekle
+                        uyari.setText("Admin başarıyla eklendi.");
+                    }
+                } catch (SQLException e) {
                     uyari.setText("Hata Meydana Geldi.");
+                    e.printStackTrace();
                 }
-                adminler.getItems().clear();
-                butonlar.getItems().clear();
-                yaz();
+                yenile(); // Yenileme işlemi
             }
         }
     }
+
     private boolean adminKontrol(String girilenAd) {
-        try (BufferedReader reader = new BufferedReader(new FileReader("adminler.txt"))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                String[] parts = line.split(":");
-                if (parts.length == 2) {
-                    String storedUsername = parts[0].trim();
-                    if (girilenAd.equals(storedUsername)) {
-                        return true;
-                    }
+
+        try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD)) {
+            String sql = "SELECT COUNT(*) FROM Adminler WHERE AdminAdi = ?";
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setString(1, girilenAd); // Kullanıcı adı parametresini sorguya ekliyoruz
+                ResultSet rs = stmt.executeQuery(); // Sorguyu çalıştırıyoruz
+                if (rs.next()) {
+                    return rs.getInt(1) > 0; // Eğer admin adı varsa, count > 0 olacak
                 }
-            }reader.close();
-        }catch (Exception e) {
-            uyari.setText("Hata Meydana Geldi.");
+            }
+        } catch (SQLException e) {
+            uyari.setText("Veritabanı hatası.");
+            e.printStackTrace();
         }
-        return false;
+        return false; // Admin adı bulunmadıysa false döner
     }
     @Override
     public void cikis(){
@@ -77,76 +92,58 @@ public class AdminEkleEkran extends Ekran implements Initializable {
         yaz();
     }
     @Override
-    public void yaz(){
-        try (BufferedReader reader = new BufferedReader(new FileReader("adminler.txt"))) {
-            String line;
-            int satir =0;
-            while ((line = reader.readLine()) != null) {
-                String[] kullanici = line.split(":");
-                adminler.getItems().add(kullanici[0].trim());
-                Button button = new Button("Sil");
-                button.setPrefWidth(50);
-                button.setPrefHeight(30);
-                final int finalSatir = satir;
-                button.setOnAction(e -> {
-                    try {
-                        silButton(finalSatir);
-                    } catch (IOException ex) {
-                        throw new RuntimeException(ex);
-                    }
-                });
-                butonlar.getItems().add(button);
-                satir++;
+    public void yaz() {
+        try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD)) {
+            String sql = "SELECT AdminAdi FROM Adminler";
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                ResultSet rs = stmt.executeQuery(); // Adminleri sorgula
+                while (rs.next()) {
+                    String adminAdi = rs.getString("AdminAdi");
+                    adminler.getItems().add(adminAdi); // Admini listeye ekle
 
-            }reader.close();
-        }catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-    private void silButton(int satir) throws IOException {
-        adminler.getItems().remove(satir);
-        butonlar.getItems().remove(satir);
-        try {
-            List<String> lines = new ArrayList<>();
-            try (BufferedReader br = new BufferedReader(new FileReader("adminler.txt"))) {
-                String line;
-                while ((line = br.readLine()) != null) {
-                    lines.add(line);
-
+                    // Sil butonunu oluştur
+                    Button button = new Button("Sil");
+                    button.setPrefWidth(50);
+                    button.setPrefHeight(30);
+                    button.setOnAction(e -> {
+                        try {
+                            silButton(adminAdi); // Sil butonuna tıklandığında admini sil
+                        } catch (IOException ex) {
+                            throw new RuntimeException(ex);
+                        }
+                    });
+                    butonlar.getItems().add(button); // Butonu listeye ekle
                 }
-                br.close();}
-            if (satir >= 0 && satir <= lines.size()) {
-                lines.remove(satir);
-            } else {
-                System.out.println("Geçersiz satır numarası.");
-                return;
             }
-            try (BufferedWriter bw = new BufferedWriter(new FileWriter("adminler.txt"))) {
-                for (String line : lines) {
-                    bw.write(line);
-                    bw.newLine();
-                }
-            bw.close();}
-            System.out.println("Dosya başarıyla güncellendi.");
-
-        } catch (IOException e) {
+        } catch (SQLException e) {
             e.printStackTrace();
         }
-        try {
-            yenile();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
     }
+
+    private void silButton(String adminAdi) throws IOException {
+        try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD)) {
+            String sql = "DELETE FROM Adminler WHERE AdminAdi = ?";
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setString(1, adminAdi); // Silinecek adminin adını sorguya ekle
+                stmt.executeUpdate(); // Admini veritabanından sil
+                uyari.setText("Admin başarıyla silindi.");
+            }
+        } catch (SQLException e) {
+            uyari.setText("Hata Meydana Geldi.");
+            e.printStackTrace();
+        }
+        yenile(); // Yenileme işlemi
+    }
+
     @Override
     public void yenile() throws IOException {
-        Stage stage1 = (Stage) uyari.getScene().getWindow();
+        Stage stage1 = (Stage) uyari.getScene().getWindow(); // Mevcut pencereyi kapat
         stage1.close();
-        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("adminEkleEkran.fxml"));
+        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("adminEkleEkran.fxml")); // Yeni ekranı yükle
         Stage stage = new Stage();
         Scene scene = new Scene(fxmlLoader.load(), 420, 457);
         stage.setTitle("Admin Ekle/Çıkar");
         stage.setScene(scene);
-        stage.show();
+        stage.show(); // Yeni pencereyi göster
     }
 }

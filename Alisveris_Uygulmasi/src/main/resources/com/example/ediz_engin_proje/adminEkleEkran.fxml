@@ -23,7 +23,7 @@
                   <ListView id="root1" fx:id="adminler" layoutX="48.0" layoutY="59.0" prefHeight="318.0" prefWidth="85.0" style="-fx-background-color: #59788e; -fx-background-radius: 3; -fx-fixed-cell-size: 30; -fx-control-inner-background: #59788e;" stylesheets="@mainstill.css" />
                   <VBox layoutX="157.0" layoutY="45.0" />
                   <VBox layoutX="41.0" layoutY="42.0" />
-                  <ListView id="root1" fx:id="butonlar" layoutX="146.0" layoutY="59.0" prefHeight="318.0" prefWidth="58.0" style="-fx-background-color: #2a475e; -fx-background-radius: 3; -fx-fixed-cell-size: 30; -fx-control-inner-background: #2a475e;" stylesheets="@mainstill.css" />
+                  <ListView id="root1" fx:id="butonlar" layoutX="133.0" layoutY="59.0" prefHeight="318.0" prefWidth="71.0" style="-fx-background-color: #2a475e; -fx-background-radius: 3; -fx-fixed-cell-size: 30; -fx-control-inner-background: #2a475e;" stylesheets="@mainstill.css" />
                   <TextField fx:id="loginUsername" layoutX="263.0" layoutY="19.0" prefHeight="26.0" prefWidth="150.0" promptText="Kullanıcı Adı" />
                   <TextField fx:id="loginPassword" layoutX="263.0" layoutY="59.0" prefHeight="26.0" prefWidth="150.0" promptText="Şifre" />
                   <Button layoutX="361.0" layoutY="106.0" mnemonicParsing="false" onAction="#adminEkle" prefHeight="26.0" prefWidth="51.0" style="-fx-background-color: white;" stylesheets="@mainstill.css" text="Ekle" />

@@ -8,19 +8,23 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
-import javafx.scene.control.cell.TextFieldListCell;
 import javafx.stage.Stage;
-import javafx.util.StringConverter;
-import javafx.util.converter.DefaultStringConverter;
 
 import java.io.*;
 import java.net.URL;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.ResourceBundle;
 
 public class YoneticiEkran extends Ekran implements Initializable {
+
+    String URL = "jdbc:sqlserver://localhost:1433;databaseName=BBB;encrypt=false;trustServerCertificate=true";
+    String USER = "BBB";  // Kullanıcı adı
+    String PASSWORD = "BBB";  // Şifre
+
+
     @FXML
     TextField urunAdi;
     @FXML
@@ -39,12 +43,21 @@ public class YoneticiEkran extends Ekran implements Initializable {
     ListView<Button> butonlar = new ListView<>();
     @FXML
     Button adminEkleCikar;
-    public void gorunurYap(){
-        if (MainController.yoneticiMi){
+
+    private Connection connection;
+
+    public YoneticiEkran() throws SQLException {
+        // Establish a connection to the database
+        connection = DriverManager.getConnection(URL, USER, PASSWORD);
+    }
+
+    public void gorunurYap() {
+        if (MainController.yoneticiMi) {
             adminEkleCikar.setVisible(true);
             adminEkleCikar.setDisable(false);
         }
     }
+
     public void musteri_gec() throws IOException {
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("musteriEkran.fxml"));
         Stage stage = new Stage();
@@ -54,8 +67,8 @@ public class YoneticiEkran extends Ekran implements Initializable {
         stage.show();
         Stage stage1 = (Stage) uyari.getScene().getWindow();
         stage1.close();
-
     }
+
     @FXML
     public void adminEkleCikar() throws IOException {
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("adminEkleEkran.fxml"));
@@ -65,8 +78,9 @@ public class YoneticiEkran extends Ekran implements Initializable {
         stage.setScene(scene);
         stage.show();
     }
+
     @FXML
-    public void urunEkle() throws IOException {
+    public void urunEkle() throws SQLException {
         try {
             String urunAdiText = urunAdi.getText();
             int stokSayisiText = Integer.parseInt(stokSayisi.getText());
@@ -77,10 +91,13 @@ public class YoneticiEkran extends Ekran implements Initializable {
                 if (Objects.equals(urunAdiText, "") || stokSayisiText <= 0 || fiyatText <= 0) {
                     uyari.setText("Tüm bilgileri giriniz.");
                 } else {
-                    try (FileWriter writer = new FileWriter("urunler.txt", true)) {
-                        writer.write(urunAdiText + ":" + stokSayisiText + ":" + fiyatText + "\n");
-                    } catch (Exception e) {
-                        uyari.setText("Okuyamadım Abii, affet :(.");
+                    // Insert into database
+                    String query = "INSERT INTO Urunler (UrunAdi, UrunMiktar, Fiyat) VALUES (?, ?, ?)";
+                    try (PreparedStatement ps = connection.prepareStatement(query)) {
+                        ps.setString(1, urunAdiText);
+                        ps.setInt(2, stokSayisiText);
+                        ps.setDouble(3, fiyatText);
+                        ps.executeUpdate();
                     }
                     urunler.getItems().clear();
                     stoklar.getItems().clear();
@@ -89,21 +106,28 @@ public class YoneticiEkran extends Ekran implements Initializable {
                     yaz();
                 }
             }
-        }
-        catch (Exception e){
+        } catch (Exception e) {
             uyari.setText("Bilgileri doğru giriniz.");
         }
     }
+
     @Override
-    public void yaz(){
-        try (BufferedReader reader = new BufferedReader(new FileReader("urunler.txt"))) {
-            String line;
-            int satir =0;
-            while ((line = reader.readLine()) != null) {
-                String[] urun = line.split(":");
-                urunler.getItems().add(urun[0].trim());
-                stoklar.getItems().add(Integer.parseInt(urun[1].trim()));
-                fiyatlar.getItems().add(Double.parseDouble(urun[2].trim()));
+    public void yaz() {
+        try {
+            String query = "SELECT UrunAdi, UrunMiktar, Fiyat FROM Urunler";
+            Statement statement = connection.createStatement();
+            ResultSet resultSet = statement.executeQuery(query);
+
+            int satir = 0;
+            while (resultSet.next()) {
+                String urunAdi = resultSet.getString("UrunAdi");
+                int stokSayisi = resultSet.getInt("UrunMiktar");
+                double fiyat = resultSet.getDouble("Fiyat");
+
+                urunler.getItems().add(urunAdi);
+                stoklar.getItems().add(stokSayisi);
+                fiyatlar.getItems().add(fiyat);
+
                 Button button = new Button("Sil");
                 button.setPrefWidth(50);
                 button.setPrefHeight(30);
@@ -111,54 +135,56 @@ public class YoneticiEkran extends Ekran implements Initializable {
                 button.setOnAction(e -> {
                     try {
                         silButton(finalSatir);
-                    } catch (IOException ex) {
+                    } catch (SQLException ex) {
                         throw new RuntimeException(ex);
                     }
                 });
                 butonlar.getItems().add(button);
                 satir++;
             }
-        }catch (Exception e) {
+        } catch (SQLException e) {
             e.printStackTrace();
         }
     }
-    private void silButton(int satir) throws IOException {
+
+    private void silButton(int satir) throws SQLException {
+        String urunAdiToDelete = urunler.getItems().get(satir);
+
+        // 1. UrunMalzemeleri tablosundaki ilgili kayıtları silme
+        String deleteUrunMalzemeleriQuery = "DELETE FROM UrunMalzemeleri WHERE UrunID = (SELECT UrunID FROM Urunler WHERE UrunAdi = ?)";
+        try (PreparedStatement ps = connection.prepareStatement(deleteUrunMalzemeleriQuery)) {
+            ps.setString(1, urunAdiToDelete);
+            ps.executeUpdate();
+        }
+
+        // 2. SiparisUrunleri tablosundaki ilgili kayıtları silme (Eğer gerekli ise)
+        String deleteSiparisUrunleriQuery = "DELETE FROM SiparisUrunleri WHERE UrunID = (SELECT UrunID FROM Urunler WHERE UrunAdi = ?)";
+        try (PreparedStatement ps = connection.prepareStatement(deleteSiparisUrunleriQuery)) {
+            ps.setString(1, urunAdiToDelete);
+            ps.executeUpdate();
+        }
+
+        // 3. Urunler tablosundaki ürünü silme
+        String deleteUrunQuery = "DELETE FROM Urunler WHERE UrunAdi = ?";
+        try (PreparedStatement ps = connection.prepareStatement(deleteUrunQuery)) {
+            ps.setString(1, urunAdiToDelete);
+            ps.executeUpdate();
+        }
+
+        // 4. ListView'den ürün ve ilgili bilgileri kaldırma
         urunler.getItems().remove(satir);
         stoklar.getItems().remove(satir);
         fiyatlar.getItems().remove(satir);
         butonlar.getItems().remove(satir);
-        try {
-            List<String> lines = new ArrayList<>();
-            try (BufferedReader br = new BufferedReader(new FileReader("urunler.txt"))) {
-                String line;
-                while ((line = br.readLine()) != null) {
-                    lines.add(line);
-                }
-                br.close();
-            }
-            if (satir >= 0 && satir <= lines.size()) {
-                lines.remove(satir);
-            } else {
-                System.out.println("Geçersiz satır numarası.");
-                return;
-            }
-            try (BufferedWriter bw = new BufferedWriter(new FileWriter("urunler.txt"))) {
-                for (String line : lines) {
-                    bw.write(line);
-                    bw.newLine();
-                }
-                bw.close();
-            }
 
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        // 5. Ekranı yenileme
         try {
             yenile();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
+
     public void yenile() throws IOException {
         Stage stage1 = (Stage) uyari.getScene().getWindow();
         stage1.close();
@@ -169,29 +195,29 @@ public class YoneticiEkran extends Ekran implements Initializable {
         stage.setScene(scene);
         stage.show();
     }
-    private boolean urunKontrol(String girilenAd) {
-        try (BufferedReader reader = new BufferedReader(new FileReader("urunler.txt"))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                String[] parts = line.split(":");
-                if (parts.length == 3) {
-                    String storedUsername = parts[0].trim();
-                    if (girilenAd.equals(storedUsername)) {
-                        return true;
-                    }
-                }
-            }reader.close();
-        }catch (Exception e) {
-            uyari.setText("Hata Meydana Geldi.");
+
+    private boolean urunKontrol(String girilenAd) throws SQLException {
+        String query = "SELECT COUNT(*) FROM Urunler WHERE UrunAdi = ?";
+        try (PreparedStatement ps = connection.prepareStatement(query)) {
+            ps.setString(1, girilenAd);
+            ResultSet resultSet = ps.executeQuery();
+            if (resultSet.next()) {
+                return resultSet.getInt(1) > 0;
+            }
         }
         return false;
     }
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
-        yaz();
+        try {
+            yaz();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         gorunurYap();
     }
+
     @Override
     public void cikis() throws IOException {
         FXMLLoader fxmlLoader = new FXMLLoader(MainApp.class.getResource("uygulama.fxml"));
@@ -203,5 +229,4 @@ public class YoneticiEkran extends Ekran implements Initializable {
         Stage stage1 = (Stage) uyari.getScene().getWindow();
         stage1.close();
     }
-
 }
