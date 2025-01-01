@@ -27,8 +27,6 @@ public class MusteriEkran extends Ekran implements Initializable {
     @FXML
     private Label uyari;
     @FXML
-    private Button admin_gec;
-    @FXML
     private Label bakiye;
     @FXML
     private ListView<String> urunler;
@@ -42,7 +40,6 @@ public class MusteriEkran extends Ekran implements Initializable {
         try {
             setMusteriBakiye();
             urunleriListele(null);
-            gorunurYap();
         } catch (SQLException e) {
             uyari.setText("Başlatma sırasında bir hata oluştu.");
             e.printStackTrace();
@@ -150,7 +147,6 @@ public class MusteriEkran extends Ekran implements Initializable {
         }
     }
 
-
     private int getMusteriID(String musteriAdi) throws SQLException {
         String sql = "SELECT MusteriID FROM Musteriler WHERE MusteriAdi = ?";
         try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD);
@@ -166,14 +162,49 @@ public class MusteriEkran extends Ekran implements Initializable {
         throw new SQLException("Müşteri ID bulunamadı.");
     }
 
-    public void gorunurYap() {
-        if (MainController.yetkiliMi) {
-            admin_gec.setVisible(true);
-        }
-    }
-
+    @FXML
     public void aramaYap() throws SQLException {
-        urunleriListele("UrunAdi LIKE '%" + aramaKutusu.getText().trim() + "%'");
+        String aramaMetni = aramaKutusu.getText().trim();
+        if (aramaMetni.isEmpty()) {
+            // Eğer arama kutusu boşsa, tüm ürünleri listele
+            urunleriListele(null);
+        } else {
+            // Ürün adı veya malzeme adı ile arama yap
+            String sql = "SELECT DISTINCT u.UrunAdi, u.Fiyat, u.UrunMiktar " +
+                    "FROM Urunler u " +
+                    "LEFT JOIN UrunMalzemeleri um ON u.UrunID = um.UrunID " +
+                    "LEFT JOIN Malzemeler m ON um.MalzemeID = m.MalzemeID " +
+                    "WHERE u.UrunAdi LIKE ? OR m.MalzemeAdi LIKE ?";
+
+            try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD);
+                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+                String aramaParam = "%" + aramaMetni + "%";
+                stmt.setString(1, aramaParam);
+                stmt.setString(2, aramaParam);
+
+                try (ResultSet rs = stmt.executeQuery()) {
+                    urunler.getItems().clear();
+                    stoklar.getItems().clear();
+                    fiyatlar.getItems().clear();
+                    butonlar.getItems().clear();
+
+                    while (rs.next()) {
+                        String urunAdi = rs.getString("UrunAdi");
+                        int stok = rs.getInt("UrunMiktar");
+                        double fiyat = rs.getDouble("Fiyat");
+
+                        urunler.getItems().add(urunAdi);
+                        stoklar.getItems().add(stok);
+                        fiyatlar.getItems().add(fiyat);
+
+                        Button button = new Button("Sepete Ekle");
+                        button.setOnAction(e -> sepeteEkle(urunAdi, fiyat, stok));
+                        butonlar.getItems().add(button);
+                    }
+                }
+            }
+        }
     }
 
     public void fiyatSiralaAzalan() throws SQLException {
@@ -197,15 +228,8 @@ public class MusteriEkran extends Ekran implements Initializable {
         stage.setScene(scene);
         stage.show();
     }
-    @FXML
-    public void admin_gec() throws IOException {
-        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("yoneticiEkran.fxml"));
-        Stage stage = new Stage();
-        stage.setScene(new Scene(fxmlLoader.load(), 1050, 720));
-        stage.setTitle("Admin Ekran");
-        stage.show();
-        ((Stage) fiyatlar.getScene().getWindow()).close();
-    }
+
+
     @FXML
     public void cikis() throws IOException {
         FXMLLoader fxmlLoader = new FXMLLoader(MainApp.class.getResource("uygulama.fxml"));

@@ -77,18 +77,13 @@
                   <Font name="Century Schoolbook Bold" size="27.0" />
                </font>
             </Label>
-            <Button fx:id="admin_gec" disable="true" layoutX="799.0" layoutY="24.0" mnemonicParsing="false" onAction="#admin_gec" prefHeight="26.0" prefWidth="220.0" style="-fx-background-color: #59788e;" stylesheets="@mainstill.css" text="ADMİN GÖRÜNÜMÜNE GEÇ" textFill="WHITE" visible="false">
-               <font>
-                  <Font name="Century Schoolbook Bold" size="12.0" />
-               </font>
-            </Button>
             <Label fx:id="uyari" alignment="CENTER" layoutX="804.0" layoutY="84.0" prefHeight="55.0" prefWidth="220.0" style="-fx-background-color: #2a475e; -fx-background-radius: 3;" stylesheets="@mainstill.css" textFill="RED">
                <font>
                   <Font size="14.0" />
                </font>
             </Label>
-            <TextField fx:id="aramaKutusu" layoutX="869.0" layoutY="183.0" prefHeight="26.0" prefWidth="155.0" promptText="Aradığınız Ürün" />
-            <Button layoutX="927.0" layoutY="218.0" mnemonicParsing="false" onAction="#aramaYap" text="ARA" />
+            <TextField fx:id="aramaKutusu" layoutX="869.0" layoutY="37.0" prefHeight="26.0" prefWidth="155.0" promptText="Aradığınız Ürün" />
+            <Button layoutX="927.0" layoutY="84.0" mnemonicParsing="false" onAction="#aramaYap" text="ARA" />
          </children>
       </AnchorPane>
    </children>

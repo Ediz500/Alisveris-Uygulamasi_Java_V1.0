@@ -43,6 +43,8 @@ public class YoneticiEkran extends Ekran implements Initializable {
     ListView<Button> butonlar = new ListView<>();
     @FXML
     Button adminEkleCikar;
+    @FXML
+    Button adminpanel;
 
     private Connection connection;
 
@@ -189,6 +191,17 @@ public class YoneticiEkran extends Ekran implements Initializable {
         Stage stage1 = (Stage) uyari.getScene().getWindow();
         stage1.close();
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("yoneticiEkran.fxml"));
+        Stage stage = new Stage();
+        Scene scene = new Scene(fxmlLoader.load(), 1050, 720);
+        stage.setTitle("Admin Ekran");
+        stage.setScene(scene);
+        stage.show();
+    }
+
+    public void kontrolPanel() throws IOException {
+        Stage stage1 = (Stage) uyari.getScene().getWindow();
+        stage1.close();
+        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("kontrolpanel.fxml"));
         Stage stage = new Stage();
         Scene scene = new Scene(fxmlLoader.load(), 1050, 720);
         stage.setTitle("Admin Ekran");

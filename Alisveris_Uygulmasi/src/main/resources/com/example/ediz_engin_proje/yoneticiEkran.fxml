@@ -12,7 +12,7 @@
    <children>
       <AnchorPane id="root1" prefHeight="70.0" prefWidth="1000.0" style="-fx-background-color: #1b2838;" stylesheets="@mainstill.css">
          <children>
-            <Button layoutX="14.0" layoutY="18.0" mnemonicParsing="false" onAction="#musteri_gec" prefHeight="26.0" prefWidth="220.0" style="-fx-background-color: #59788e;" stylesheets="@mainstill.css" text="Admin Paneli" textFill="WHITE">
+            <Button fx:id="adminpanel" layoutX="14.0" layoutY="18.0" mnemonicParsing="false" onAction="#kontrolPanel" prefHeight="26.0" prefWidth="220.0" style="-fx-background-color: #59788e;" stylesheets="@mainstill.css" text="Admin Paneli" textFill="WHITE">
                <font>
                   <Font name="Century Schoolbook Bold" size="12.0" />
                </font>
