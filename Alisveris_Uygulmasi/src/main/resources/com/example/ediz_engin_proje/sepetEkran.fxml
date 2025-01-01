@@ -19,7 +19,7 @@
                   <Font name="Century Schoolbook Bold" size="12.0" />
                </font>
             </Button>
-            <Button id="root1" alignment="CENTER" layoutX="962.0" layoutY="18.0" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" onAction="#geri_git" prefHeight="34.0" prefWidth="59.0" style="-fx-background-color: #A9A9A9;" stylesheets="@mainstill.css" text="GERİ" textFill="#fcfcfc">
+            <Button id="root1" alignment="CENTER" layoutX="962.0" layoutY="18.0" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" onAction="#geriGit" prefHeight="34.0" prefWidth="59.0" style="-fx-background-color: #A9A9A9;" stylesheets="@mainstill.css" text="GERİ" textFill="#fcfcfc">
                <font>
                   <Font name="Century Schoolbook Bold" size="14.0" />
                </font>

@@ -10,16 +10,21 @@ public class DatabaseConnection {
     private static final String USERNAME = "BBB";  // Kullanıcı adı
     private static final String PASSWORD = "BBB";  // Şifre
 
-    connection = DriverManager.getConnection(URL, USERNAME, PASSWORD);
+    Connection conn;
+
+    {
+        try {
+            conn = DriverManager.getConnection(URL, USERNAME, PASSWORD);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private static Connection connection;
 
     public static Connection getConnection() {
         if (connection == null) {
-            try {
 
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
         }
         return connection;
     }

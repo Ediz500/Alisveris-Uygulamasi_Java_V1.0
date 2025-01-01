@@ -13,165 +13,42 @@ import javafx.stage.Stage;
 import java.io.IOException;
 import java.net.URL;
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.ResourceBundle;
 
 public class MusteriEkran extends Ekran implements Initializable {
-    String URL = "jdbc:sqlserver://localhost:1433;databaseName=BBB;encrypt=false;trustServerCertificate=true";
-    String USER = "BBB";  // Kullanıcı adı
-    String PASSWORD = "BBB";  // Şifre
+    private static final String URL = "jdbc:sqlserver://localhost:1433;databaseName=BBB;encrypt=false;trustServerCertificate=true";
+    private static final String USER = "BBB";
+    private static final String PASSWORD = "BBB";
 
     @FXML
-    TextField aramaKutusu;
+    private TextField aramaKutusu;
     @FXML
-    ListView<Button> butonlar;
+    private ListView<Button> butonlar;
     @FXML
-    Label uyari;
+    private Label uyari;
     @FXML
-    Button admin_gec;
+    private Button admin_gec;
     @FXML
-    Label bakiye;
+    private Label bakiye;
     @FXML
-    Label isim;
+    private ListView<String> urunler;
     @FXML
-    Label stok;
+    private ListView<Integer> stoklar;
     @FXML
-    Label ucret;
+    private ListView<Double> fiyatlar;
 
-    @FXML
-    ListView<String> urunler = new ListView<>();
-    @FXML
-    ListView<Integer> stoklar = new ListView<>();
-    @FXML
-    ListView<Double> fiyatlar = new ListView<>();
-
-    public static List<String> uruns = new ArrayList<>();
-    public static List<Double> fiyats = new ArrayList<>();
-    public static List<Integer> stoks = new ArrayList<>();
-
-    public void gorunurYap(){
-        if (MainController.yetkiliMi){
-            admin_gec.setVisible(true);
-            admin_gec.setDisable(false);
-        }
-    }
-
-    public void mouseUstunde(){
-        uyari.setText("");
-    }
-
-    public void bakiyeGoruntule(){
-        bakiye.setText(String.valueOf(YuklemeEkran.Bakiye));
-    }
-
-    @FXML
-    public void bakiyeYukle() throws IOException {
-        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("yuklemeEkran.fxml"));
-        Stage stage = new Stage();
-        Scene scene = new Scene(fxmlLoader.load(), 303, 345);
-        stage.setTitle("Bakiye Yükle");
-        stage.setScene(scene);
-        stage.show();
-    }
-
-    @FXML
-    public void fiyatSiralaAzalan() throws SQLException {
-        urunleriSirala("Fiyat DESC");
-    }
-
-    @FXML
-    public void isimeGoreSirala() throws SQLException {
-        urunleriSirala("UrunAdi ASC");
-    }
-
-    @FXML
-    public void stokMiktarinaGoreSirala() throws SQLException {
-        urunleriSirala("UrunMiktar ASC");
-    }
-
-    private void urunleriSirala(String orderByColumn) throws SQLException {
-        String sql = "SELECT UrunAdi, UrunMiktar, Fiyat FROM Urunler ORDER BY " + orderByColumn;
-        try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD);
-             Statement statement = conn.createStatement();
-             ResultSet resultSet = statement.executeQuery(sql)) {
-
-            urunler.getItems().clear();
-            stoklar.getItems().clear();
-            fiyatlar.getItems().clear();
-            butonlar.getItems().clear();
-
-            int satir = 0;
-            while (resultSet.next()) {
-                urunler.getItems().add(resultSet.getString("UrunAdi"));
-                stoklar.getItems().add(resultSet.getInt("UrunMiktar"));
-                fiyatlar.getItems().add(resultSet.getDouble("Fiyat"));
-
-                Button button = new Button("Sepete Ekle");
-                button.setPrefWidth(100);
-                button.setPrefHeight(30);
-                final int finalSatir = satir;
-                button.setOnMouseExited(e -> mouseUstunde());
-                button.setOnAction(e -> {
-                    try {
-                        sepeteEkleButton(finalSatir);
-                    } catch (IOException ex) {
-                        throw new RuntimeException(ex);
-                    }
-                });
-                butonlar.getItems().add(button);
-                satir++;
-            }
-        }
-    }
-
-    @FXML
-    private void aramaYap() throws SQLException {
-        String aramaKelimesi = aramaKutusu.getText().trim();  // Arama kelimesini al
-        String sql = "SELECT UrunAdi, UrunMiktar, Fiyat FROM Urunler WHERE UrunAdi LIKE ?";
-
-        try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD);  // Bağlantıyı burada açıyoruz
-             PreparedStatement statement = conn.prepareStatement(sql)) {
-
-            if (!aramaKelimesi.isEmpty()) {
-                statement.setString(1, "%" + aramaKelimesi + "%");
-            } else {
-                statement.setString(1, "%"); // Eğer arama kutusu boşsa, tüm ürünler için 'LIKE %' kullan
-            }
-
-            try (ResultSet resultSet = statement.executeQuery()) {
-                urunler.getItems().clear();
-                stoklar.getItems().clear();
-                fiyatlar.getItems().clear();
-                butonlar.getItems().clear();
-
-                int satir = 0;
-                while (resultSet.next()) {
-                    urunler.getItems().add(resultSet.getString("UrunAdi"));
-                    stoklar.getItems().add(resultSet.getInt("UrunMiktar"));
-                    fiyatlar.getItems().add(resultSet.getDouble("Fiyat"));
-
-                    Button button = new Button("Sepete Ekle");
-                    button.setPrefWidth(100);
-                    button.setPrefHeight(30);
-                    final int finalSatir = satir;
-                    button.setOnMouseExited(e -> mouseUstunde());
-                    button.setOnAction(e -> {
-                        try {
-                            sepeteEkleButton(finalSatir);
-                        } catch (IOException ex) {
-                            throw new RuntimeException(ex);
-                        }
-                    });
-                    butonlar.getItems().add(button);
-                    satir++;
-                }
-            }
+    @Override
+    public void initialize(URL url, ResourceBundle resourceBundle) {
+        try {
+            setMusteriBakiye();
+            urunleriListele(null);
+            gorunurYap();
         } catch (SQLException e) {
-            uyari.setText("Arama sırasında bir hata oluştu.");
+            uyari.setText("Başlatma sırasında bir hata oluştu.");
             e.printStackTrace();
         }
     }
+
     @FXML
     public void sepet() throws IOException {
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("sepetEkran.fxml"));
@@ -184,144 +61,158 @@ public class MusteriEkran extends Ekran implements Initializable {
         stage1.close();
     }
 
-    public void admin_gec() throws IOException {
-        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("yoneticiEkran.fxml"));
-        Stage stage = new Stage();
-        Scene scene = new Scene(fxmlLoader.load(), 1050, 720);
-        stage.setTitle("Admin Ekran");
-        stage.setScene(scene);
-        stage.show();
-        Stage stage1 = (Stage) fiyatlar.getScene().getWindow();
-        stage1.close();
-    }
-
-    @Override
-    public void initialize(URL url, ResourceBundle resourceBundle) {
-        try {
-            Connection conn = DriverManager.getConnection(URL, USER, PASSWORD);
-            String sql = "SELECT MusteriAdi, MusteriSifresi, Bakiye FROM Musteriler WHERE MusteriAdi = ?";
-            PreparedStatement statement = conn.prepareStatement(sql);
-            statement.setString(1, MainController.aktifMusteri);
-            ResultSet resultSet = statement.executeQuery();
-
-            if (resultSet.next()) {
-                YuklemeEkran.Bakiye = resultSet.getDouble("Bakiye");
-            }
-
-            resultSet.close();
-            statement.close();
-
-            yaz();  // Ürünleri veritabanından yazdır
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-
-        gorunurYap();
-        bakiyeGoruntule();
-    }
-
-    @Override
-    public void yenile() throws IOException {
-        Stage stage1 = (Stage) uyari.getScene().getWindow();
-        stage1.close();
-        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("musteriEkran.fxml"));
-        Stage stage = new Stage();
-        Scene scene = new Scene(fxmlLoader.load(), 1050, 720);
-        stage.setTitle("Ana Ekran");
-        stage.setScene(scene);
-        stage.show();
-    }
-
-    @Override
-    public void yaz() throws SQLException {
-        String sql = "SELECT UrunAdi, UrunMiktar, Fiyat FROM Urunler";
+    private void setMusteriBakiye() throws SQLException {
+        String sql = "SELECT Bakiye FROM Musteriler WHERE MusteriAdi = ?";
         try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD);
-             Statement statement = conn.createStatement();
-             ResultSet resultSet = statement.executeQuery(sql)) {
+             PreparedStatement statement = conn.prepareStatement(sql)) {
 
-            int satir = 0;
-            while (resultSet.next()) {
-                urunler.getItems().add(resultSet.getString("UrunAdi"));
-                stoklar.getItems().add(resultSet.getInt("UrunMiktar"));
-                fiyatlar.getItems().add(resultSet.getDouble("Fiyat"));
-
-                Button button = new Button("Sepete Ekle");
-                button.setPrefWidth(100);
-                button.setPrefHeight(30);
-                final int finalSatir = satir;
-                button.setOnMouseExited(e -> mouseUstunde());
-                button.setOnAction(e -> {
-                    try {
-                        sepeteEkleButton(finalSatir);
-                    } catch (IOException ex) {
-                        throw new RuntimeException(ex);
-                    }
-                });
-                butonlar.getItems().add(button);
-                satir++;
-            }
-        }
-    }
-
-    private void sepeteEkleButton(int satir) throws IOException {
-        try {
-            listedeVarmi(satir);
-        } catch (Exception e) {
-            uruns.add(urunler.getItems().get(satir));
-            fiyats.add(fiyatlar.getItems().get(satir));
-            stoks.add(1);
-            uyari.setText("Ürün Sepete Eklendi.");
-        }
-    }
-
-    public void listedeVarmi(int satir) {
-        int b = 0;
-        int deger = 0;
-        if (stoklar.getItems().get(satir) == 0) {
-            b = 2;
-        }
-
-        for (int i = 0; i < uruns.size(); i++) {
-            if (urunler.getItems().get(satir).equals(uruns.get(i))) {
-                if (stoklar.getItems().get(satir) == 0) {
-                    b = 2;
-                    break;
-                } else {
-                    if (stoklar.getItems().get(satir) == stoks.get(i)) {
-                        b = 2;
-                        break;
-                    } else {
-                        b = 1;
-                        deger = i;
-                        break;
-                    }
+            statement.setString(1, MainController.aktifMusteri);
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    YuklemeEkran.Bakiye = rs.getDouble("Bakiye");
+                    bakiye.setText(String.valueOf(YuklemeEkran.Bakiye));
                 }
             }
         }
+    }
 
-        if (b == 1) {
-            int stok = stoks.get(deger);
-            stoks.set(deger, stok + 1);
-            uyari.setText("Ürün Sepete Eklendi.");
-        } else if (b == 2) {
-            uyari.setText("Stokta yeterince ürün bulunmuyor.");
-        } else {
-            uruns.add(urunler.getItems().get(satir));
-            fiyats.add(fiyatlar.getItems().get(satir));
-            stoks.add(1);
-            uyari.setText("Ürün Sepete Eklendi.");
+    private void urunleriListele(String orderBy) throws SQLException {
+        String sql = "SELECT UrunAdi, UrunMiktar, Fiyat FROM Urunler";
+        if (orderBy != null) {
+            sql += " ORDER BY " + orderBy;
+        }
+
+        try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD);
+             Statement statement = conn.createStatement();
+             ResultSet rs = statement.executeQuery(sql)) {
+
+            urunler.getItems().clear();
+            stoklar.getItems().clear();
+            fiyatlar.getItems().clear();
+            butonlar.getItems().clear();
+
+            while (rs.next()) {
+                String urunAdi = rs.getString("UrunAdi");
+                int stok = rs.getInt("UrunMiktar");
+                double fiyat = rs.getDouble("Fiyat");
+
+                urunler.getItems().add(urunAdi);
+                stoklar.getItems().add(stok);
+                fiyatlar.getItems().add(fiyat);
+
+                Button button = new Button("Sepete Ekle");
+                button.setOnAction(e -> sepeteEkle(urunAdi, fiyat, stok));
+                butonlar.getItems().add(button);
+            }
         }
     }
 
-    @Override
+    private void sepeteEkle(String urunAdi, double fiyat, int stok) {
+        if (stok <= 0) {
+            uyari.setText("Stokta yeterince ürün yok.");
+            return;
+        }
+
+        String sqlKontrol = "SELECT Adet FROM Sepet WHERE MusteriID = ? AND UrunAdi = ?";
+        String sqlEkle = "INSERT INTO Sepet (SepetID, MusteriID, UrunAdi, Fiyat, Adet) VALUES (?, ?, ?, ?, ?)";
+        String sqlGuncelle = "UPDATE Sepet SET Adet = Adet + 1 WHERE MusteriID = ? AND UrunAdi = ?";
+
+        try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD)) {
+            int musteriID = getMusteriID(MainController.aktifMusteri); // Get customer ID
+
+            try (PreparedStatement kontrolStmt = conn.prepareStatement(sqlKontrol)) {
+                kontrolStmt.setInt(1, musteriID);
+                kontrolStmt.setString(2, urunAdi);
+
+                try (ResultSet rs = kontrolStmt.executeQuery()) {
+                    if (rs.next()) {
+                        try (PreparedStatement guncelleStmt = conn.prepareStatement(sqlGuncelle)) {
+                            guncelleStmt.setInt(1, musteriID);
+                            guncelleStmt.setString(2, urunAdi);
+                            guncelleStmt.executeUpdate();
+                        }
+                    } else {
+                        try (PreparedStatement ekleStmt = conn.prepareStatement(sqlEkle)) {
+                            ekleStmt.setInt(1, musteriID);  // Set SepetID to MusteriID
+                            ekleStmt.setInt(2, musteriID);  // Also set MusteriID
+                            ekleStmt.setString(3, urunAdi);
+                            ekleStmt.setDouble(4, fiyat);
+                            ekleStmt.setInt(5, 1);
+                            ekleStmt.executeUpdate();
+                        }
+                    }
+                }
+            }
+            uyari.setText("Ürün sepete eklendi.");
+        } catch (SQLException e) {
+            uyari.setText("Sepete ekleme sırasında bir hata oluştu.");
+            e.printStackTrace();
+        }
+    }
+
+
+    private int getMusteriID(String musteriAdi) throws SQLException {
+        String sql = "SELECT MusteriID FROM Musteriler WHERE MusteriAdi = ?";
+        try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD);
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, musteriAdi);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("MusteriID");
+                }
+            }
+        }
+        throw new SQLException("Müşteri ID bulunamadı.");
+    }
+
+    public void gorunurYap() {
+        if (MainController.yetkiliMi) {
+            admin_gec.setVisible(true);
+        }
+    }
+
+    public void aramaYap() throws SQLException {
+        urunleriListele("UrunAdi LIKE '%" + aramaKutusu.getText().trim() + "%'");
+    }
+
+    public void fiyatSiralaAzalan() throws SQLException {
+        urunleriListele("Fiyat DESC");
+    }
+
+    public void isimeGoreSirala() throws SQLException {
+        urunleriListele("UrunAdi ASC");
+    }
+
+    public void stokMiktarinaGoreSirala() throws SQLException {
+        urunleriListele("UrunMiktar ASC");
+    }
+
+    @FXML
+    public void bakiyeYukle() throws IOException {
+        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("yuklemeEkran.fxml"));
+        Stage stage = new Stage();
+        Scene scene = new Scene(fxmlLoader.load(), 303, 345);
+        stage.setTitle("Bakiye Yükle");
+        stage.setScene(scene);
+        stage.show();
+    }
+    @FXML
+    public void admin_gec() throws IOException {
+        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("yoneticiEkran.fxml"));
+        Stage stage = new Stage();
+        stage.setScene(new Scene(fxmlLoader.load(), 1050, 720));
+        stage.setTitle("Admin Ekran");
+        stage.show();
+        ((Stage) fiyatlar.getScene().getWindow()).close();
+    }
+    @FXML
     public void cikis() throws IOException {
         FXMLLoader fxmlLoader = new FXMLLoader(MainApp.class.getResource("uygulama.fxml"));
         Stage stage = new Stage();
-        Scene scene = new Scene(fxmlLoader.load(), 600, 400);
+        stage.setScene(new Scene(fxmlLoader.load(), 600, 400));
         stage.setTitle("Giriş");
-        stage.setScene(scene);
         stage.show();
-        Stage stage1 = (Stage) uyari.getScene().getWindow();
-        stage1.close();
+        ((Stage) uyari.getScene().getWindow()).close();
     }
 }
