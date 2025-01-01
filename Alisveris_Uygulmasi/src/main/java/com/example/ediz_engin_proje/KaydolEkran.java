@@ -72,7 +72,7 @@ public class KaydolEkran extends Ekran {
     }
 
     private boolean musteriKontrol(String girilenAd) throws SQLException {
-        try (Connection conn = DatabaseConnection.getConnection()) {
+        try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD)) {
             if (conn == null || conn.isClosed()) {
                 uyari.setText("Veritabanı bağlantısı hatalı.");
                 return false; // Bağlantı hatalıysa işlemi durdur
